@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:sdg_example/facts.model.dart';
 
 import 'cats.model.dart';
 
@@ -31,11 +32,17 @@ class OurList extends StatefulWidget {
 
 class _OurListState extends State<OurList> {
   List<RandomCats> cats = [];
+  RandomFacts randomFactData;
   @override
   void initState() {
     randomCarUrls().then((value) {
       setState(() {
         cats = value;
+      });
+      randomFacts().then((value) {
+        setState(() {
+          randomFactData = value;
+        });
       });
     });
     super.initState();
@@ -49,15 +56,18 @@ class _OurListState extends State<OurList> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(8.0),
-        child: cats.isEmpty ? Center(
-          child: CircularProgressIndicator(),
-        ): ListView.builder(
-            itemCount: cats.length,
-            itemBuilder: (context, index) {
-              return CatCard(
-                url: cats[index].url,
-              );
-            }),
+        child: cats.isEmpty && randomFactData == null
+            ? Center(
+                child: CircularProgressIndicator(),
+              )
+            : ListView.builder(
+                itemCount: cats.length,
+                itemBuilder: (context, index) {
+                  return CatCard(
+                    url: cats[index].url,
+                    fact: randomFactData.all[index].text,
+                  );
+                }),
       ),
     );
   }
@@ -65,8 +75,8 @@ class _OurListState extends State<OurList> {
 
 class CatCard extends StatelessWidget {
   final String url;
-
-  const CatCard({Key key, this.url}) : super(key: key);
+  final String fact;
+  const CatCard({Key key, this.url, this.fact}) : super(key: key);
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -76,7 +86,7 @@ class CatCard extends StatelessWidget {
             url,
           ),
           Text(
-            'The world\'s largest cat measured 48.5 inches long.',
+            fact ?? '',
             style: TextStyle(fontSize: 24.0),
           )
         ],
@@ -91,4 +101,11 @@ Future<List<RandomCats>> randomCarUrls() async {
   var body = response.body;
   final randomCats = randomCatsFromJson(body);
   return randomCats;
+}
+
+Future<RandomFacts> randomFacts() async {
+  var response = await http.get('https://cat-fact.herokuapp.com/facts');
+  var body = response.body;
+  final randomFactData = randomFactsFromJson(body);
+  return randomFactData;
 }
